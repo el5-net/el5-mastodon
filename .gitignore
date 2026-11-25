@@ -2,3 +2,5 @@
 src/
 # 任务记录，不是仓库内容（只留在 PoC 工作区）
 PLAN.md
+# tools/make-patches.sh 运行时写出的临时提交 sha，不应污染 status
+tip.sha

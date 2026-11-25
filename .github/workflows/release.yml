@@ -141,7 +141,8 @@ jobs:
       - name: Build streaming image (Docker Hub target)
         uses: docker/build-push-action@v6
         with:
-          context: src/streaming
+          context: src
+          file: src/streaming/Dockerfile
           cache-from: type=gha,scope=streaming
           cache-to: type=gha,mode=max,scope=streaming
           push: ${{ steps.meta.outputs.has_dockerhub == 'true' && steps.meta.outputs.should_push == 'true' }}
@@ -163,7 +164,8 @@ jobs:
       - name: Build streaming image (GHCR target)
         uses: docker/build-push-action@v6
         with:
-          context: src/streaming
+          context: src
+          file: src/streaming/Dockerfile
           cache-from: type=gha,scope=streaming
           cache-to: type=gha,mode=max,scope=streaming
           push: ${{ steps.meta.outputs.has_ghcr == 'true' && steps.meta.outputs.should_push == 'true' }}

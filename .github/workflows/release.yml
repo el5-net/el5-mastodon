@@ -158,8 +158,8 @@ jobs:
           cache-to: type=gha,mode=max,scope=mastodon
           push: ${{ steps.meta.outputs.has_ghcr == 'true' && steps.meta.outputs.should_push == 'true' }}
           tags: |
-            ghcr.io/${{ steps.meta.outputs.owner }}/mastodon:${{ steps.meta.outputs.tag }}
-            ghcr.io/${{ steps.meta.outputs.owner }}/mastodon:latest
+            ghcr.io/${{ steps.meta.outputs.owner }}/el5-mastodon:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/el5-mastodon:latest
 
       - name: Build streaming image (GHCR target)
         uses: docker/build-push-action@v6
@@ -170,5 +170,5 @@ jobs:
           cache-to: type=gha,mode=max,scope=streaming
           push: ${{ steps.meta.outputs.has_ghcr == 'true' && steps.meta.outputs.should_push == 'true' }}
           tags: |
-            ghcr.io/${{ steps.meta.outputs.owner }}/mastodon-streaming:${{ steps.meta.outputs.tag }}
-            ghcr.io/${{ steps.meta.outputs.owner }}/mastodon-streaming:latest
+            ghcr.io/${{ steps.meta.outputs.owner }}/el5-mastodon-streaming:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/el5-mastodon-streaming:latest

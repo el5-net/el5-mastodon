@@ -121,7 +121,7 @@ README.md                本文件
    零 secret 依赖。
 4. 打 `v4.7.6` tag 并 push（`git tag v4.7.6 && git push origin v4.7.6`）即触发 `release.yml`：
    构建并推送 `maisuier/mastodon:<tag>` / `:latest`、`maisuier/mastodon-streaming` 同款标签，
-   以及 `ghcr.io/<owner>/mastodon(-streaming)` 同款标签。tag push 总会推 ghcr
+   以及 `ghcr.io/<owner>/el5-mastodon(-streaming)` 同款标签。tag push 总会推 ghcr
    （`GITHUB_TOKEN` 恒存在）；Docker Hub 需配置 `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`，
    未配则跳过该侧并打印提示。
    手动演练：Actions → Run workflow，`push` input 默认 false（只构建不推）；可用 `version`

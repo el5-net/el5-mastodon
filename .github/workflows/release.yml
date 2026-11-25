@@ -1,0 +1,142 @@
+name: release
+
+# tag push (v*) 或手动触发；workflow_dispatch 的 push input 默认 false = 只构建不推送。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      push:
+        description: 'Push images to registries (default false = build only)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Assemble upstream + patches
+        run: bash build.sh
+
+      # secrets 不能用于 if:，先在这里把"凭据是否存在/是否请求推送"转成 job output。
+      - name: Resolve image tag and push intent
+        id: meta
+        shell: bash
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_INPUT: ${{ inputs.push }}
+          DH_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          DH_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ "$REF_TYPE" = tag ]; then
+            tag="$REF_NAME"
+          else
+            tag="manual-${RUN_NUMBER}"
+          fi
+          owner=$(printf '%s' "$OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "owner=$owner" >> "$GITHUB_OUTPUT"
+          if [ -n "$DH_USER" ] && [ -n "$DH_TOKEN" ]; then
+            echo "has_dockerhub=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_dockerhub=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$GH_TOKEN" ]; then
+            echo "has_ghcr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_ghcr=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "$REF_TYPE" = tag ] || { [ "$EVENT_NAME" = workflow_dispatch ] && [ "$PUSH_INPUT" = true ]; }; then
+            echo "should_push=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_push=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report registry capability
+        shell: bash
+        env:
+          DH: ${{ steps.meta.outputs.has_dockerhub }}
+          GH: ${{ steps.meta.outputs.has_ghcr }}
+          PUSH: ${{ steps.meta.outputs.should_push }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          echo "image tag: $TAG"
+          echo "Docker Hub credentials: $DH; GHCR token: $GH; push requested: $PUSH"
+          if [ "$PUSH" != true ] || { [ "$DH" != true ] && [ "$GH" != true ]; }; then
+            echo "::notice::凭据缺失或未请求推送：本次只构建镜像，不推送。"
+          fi
+
+      - name: Login to Docker Hub
+        if: steps.meta.outputs.has_dockerhub == 'true' && steps.meta.outputs.should_push == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GHCR
+        if: steps.meta.outputs.has_ghcr == 'true' && steps.meta.outputs.should_push == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build main image (Docker Hub target)
+        uses: docker/build-push-action@v6
+        with:
+          context: src
+          file: Dockerfile
+          push: ${{ steps.meta.outputs.has_dockerhub == 'true' && steps.meta.outputs.should_push == 'true' }}
+          tags: |
+            maisuier/mastodon:${{ steps.meta.outputs.tag }}
+            maisuier/mastodon:latest
+
+      - name: Build streaming image (Docker Hub target)
+        uses: docker/build-push-action@v6
+        with:
+          context: src/streaming
+          file: Dockerfile
+          push: ${{ steps.meta.outputs.has_dockerhub == 'true' && steps.meta.outputs.should_push == 'true' }}
+          tags: |
+            maisuier/mastodon-streaming:${{ steps.meta.outputs.tag }}
+            maisuier/mastodon-streaming:latest
+
+      - name: Build main image (GHCR target)
+        uses: docker/build-push-action@v6
+        with:
+          context: src
+          file: Dockerfile
+          push: ${{ steps.meta.outputs.has_ghcr == 'true' && steps.meta.outputs.should_push == 'true' }}
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/mastodon:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/mastodon:latest
+
+      - name: Build streaming image (GHCR target)
+        uses: docker/build-push-action@v6
+        with:
+          context: src/streaming
+          file: Dockerfile
+          push: ${{ steps.meta.outputs.has_ghcr == 'true' && steps.meta.outputs.should_push == 'true' }}
+          tags: |
+            ghcr.io/${{ steps.meta.outputs.owner }}/mastodon-streaming:${{ steps.meta.outputs.tag }}
+            ghcr.io/${{ steps.meta.outputs.owner }}/mastodon-streaming:latest

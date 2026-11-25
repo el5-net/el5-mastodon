@@ -1,0 +1,32 @@
+name: assemble
+
+# 每次 push / PR 的轻量门禁：不依赖任何 secret，也不构建镜像。
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Shell syntax check
+        run: bash -n build.sh verify.sh tools/make-patches.sh
+
+      - name: Assert patch attributes (no CRLF rewriting)
+        run: |
+          out=$(git check-attr text patches/0001-*.patch)
+          echo "$out"
+          echo "$out" | grep -q 'text: unset' || {
+            echo "::error::*.patch -text 未生效，补丁 Blob 可能被 CRLF 改写"
+            exit 1
+          }
+
+      - name: Assemble upstream + patches
+        run: bash build.sh
+
+      - name: Verify hotspots (no FORK needed)
+        run: bash verify.sh

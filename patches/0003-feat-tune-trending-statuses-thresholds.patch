@@ -1,0 +1,29 @@
+From d6765a5c0a16c2cc20991b1368be92ae0c737b06 Mon Sep 17 00:00:00 2001
+From: maisui <aibofan95@gmail.com>
+Date: Wed, 25 Nov 2026 15:06:02 +0800
+Subject: [PATCH 3/5] feat: tune trending statuses thresholds
+
+---
+ app/models/trends/statuses.rb | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/app/models/trends/statuses.rb b/app/models/trends/statuses.rb
+index e64369b08b..970a13aab0 100644
+--- a/app/models/trends/statuses.rb
++++ b/app/models/trends/statuses.rb
+@@ -6,9 +6,9 @@ class Trends::Statuses < Trends::Base
+   BATCH_SIZE = 100
+ 
+   self.default_options = {
+-    threshold: 5,
+-    review_threshold: 3,
+-    score_halflife: 1.hour.freeze,
++    threshold: 2,
++    review_threshold: 1,
++    score_halflife: 6.hours.freeze,
+     decay_threshold: 0.3,
+   }
+ 
+-- 
+2.51.0.windows.1
+

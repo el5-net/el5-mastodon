@@ -1,0 +1,4 @@
+# 补丁 blob 必须逐字节保留：Windows core.autocrlf 会把 LF 改成 CRLF，导致 git am 失败
+*.patch -text
+*.sh text eol=lf
+*.md text eol=lf

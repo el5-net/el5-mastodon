@@ -1,0 +1,40 @@
+From 0587fe43ac944d2bab2d188ee762d42ac32d8425 Mon Sep 17 00:00:00 2001
+From: maisui <aibofan95@gmail.com>
+Date: Wed, 25 Nov 2026 15:06:02 +0800
+Subject: [PATCH 4/5] feat: show only 5 recent posts to logged-out visitors
+
+---
+ .../api/v1/accounts/statuses_controller.rb      | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/app/controllers/api/v1/accounts/statuses_controller.rb b/app/controllers/api/v1/accounts/statuses_controller.rb
+index a297defd49..f40437e443 100644
+--- a/app/controllers/api/v1/accounts/statuses_controller.rb
++++ b/app/controllers/api/v1/accounts/statuses_controller.rb
+@@ -19,12 +19,17 @@ class Api::V1::Accounts::StatusesController < Api::V1::Accounts::BaseController
+   end
+ 
+   def preloaded_account_statuses
+-    preload_collection_paginated_by_id(
+-      AccountStatusesFilter.new(@account, current_account, params).results,
+-      Status,
+-      limit_param(DEFAULT_STATUSES_LIMIT),
+-      params_slice(:max_id, :since_id, :min_id)
+-    )
++    if user_signed_in?
++      preload_collection_paginated_by_id(
++        AccountStatusesFilter.new(@account, current_account, params).results,
++        Status,
++        limit_param(DEFAULT_STATUSES_LIMIT),
++        params_slice(:max_id, :since_id, :min_id)
++      )
++    else
++      # 未登录固定展示 5 条
++      preload_collection(AccountStatusesFilter.new(@account, nil, params).results.limit(5), Status)
++    end
+   end
+ 
+   def pagination_params(core_params)
+-- 
+2.51.0.windows.1
+

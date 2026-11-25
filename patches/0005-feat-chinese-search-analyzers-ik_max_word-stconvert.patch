@@ -1,0 +1,93 @@
+From a508221d1edc43ebff8c191f214b61b648c9e6ee Mon Sep 17 00:00:00 2001
+From: maisui <aibofan95@gmail.com>
+Date: Wed, 25 Nov 2026 15:06:02 +0800
+Subject: [PATCH 5/5] feat: chinese search analyzers (ik_max_word + stconvert)
+
+---
+ app/chewy/accounts_index.rb |  2 +-
+ app/chewy/statuses_index.rb | 11 ++++++++++-
+ app/chewy/tags_index.rb     | 11 ++++++++++-
+ 3 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/app/chewy/accounts_index.rb b/app/chewy/accounts_index.rb
+index 796584e9c6..cf30ae3f37 100644
+--- a/app/chewy/accounts_index.rb
++++ b/app/chewy/accounts_index.rb
+@@ -44,7 +44,7 @@ class AccountsIndex < Chewy::Index
+ 
+       # "FOO bar" becomes "foo bar"
+       verbatim: {
+-        tokenizer: 'standard',
++        tokenizer: 'ik_max_word',
+         filter: %w(lowercase asciifolding cjk_width),
+       },
+ 
+diff --git a/app/chewy/statuses_index.rb b/app/chewy/statuses_index.rb
+index e739ccecb4..e46d87fa03 100644
+--- a/app/chewy/statuses_index.rb
++++ b/app/chewy/statuses_index.rb
+@@ -20,6 +20,14 @@ class StatusesIndex < Chewy::Index
+         language: 'possessive_english',
+       },
+     },
++    char_filter: {
++      tsconvert: {
++        type: 'stconvert',
++        keep_both: false,
++        delimiter: '#',
++        convert_type: 't2s',
++      },
++    },
+ 
+     analyzer: {
+       verbatim: {
+@@ -28,7 +36,7 @@ class StatusesIndex < Chewy::Index
+       },
+ 
+       content: {
+-        tokenizer: 'standard',
++        tokenizer: 'ik_max_word',
+         filter: %w(
+           lowercase
+           asciifolding
+@@ -38,6 +46,7 @@ class StatusesIndex < Chewy::Index
+           english_stop
+           english_stemmer
+         ),
++        char_filter: %w(tsconvert),
+       },
+ 
+       hashtag: {
+diff --git a/app/chewy/tags_index.rb b/app/chewy/tags_index.rb
+index c99218a47f..2c29615f7f 100644
+--- a/app/chewy/tags_index.rb
++++ b/app/chewy/tags_index.rb
+@@ -4,15 +4,24 @@ class TagsIndex < Chewy::Index
+   include DatetimeClampingConcern
+ 
+   settings index: index_preset(refresh_interval: '30s'), analysis: {
++    char_filter: {
++      tsconvert: {
++        type: 'stconvert',
++        keep_both: false,
++        delimiter: '#',
++        convert_type: 't2s',
++      },
++    },
+     analyzer: {
+       content: {
+-        tokenizer: 'keyword',
++        tokenizer: 'ik_max_word',
+         filter: %w(
+           word_delimiter_graph
+           lowercase
+           asciifolding
+           cjk_width
+         ),
++        char_filter: %w(tsconvert),
+       },
+ 
+       edge_ngram: {
+-- 
+2.51.0.windows.1
+

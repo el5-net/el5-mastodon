@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# 从现有 fork 中提取真正的定制，做成 5 个 git 提交补丁
+# 一次性提取脚本（历史用途）：从旧 fork 把定制内容导出为 5 个 format-patch 补丁。
+# - 基线固定为 v4.7.2；补丁已固化在 patches/，日常升级/构建**不要运行本脚本**。
+# - 保留它是为了可追溯：将来若需重新提取/核对补丁来源，它是唯一的操作记录。
+# - 运行会覆盖 patches/ 并写入临时 tip.sha，故请勿顺手删除或随手执行。
 # 原理: 以 v4.7.2 为基线，逐个把 fork HEAD 中对应文件的内容登记进临时索引，
 #       用 commit-tree 生成提交，最后 format-patch 导出
 set -euo pipefail
 FORK="C:/Users/maisui/.local/share/opencode/worktree/6f38e6/nimble-nebula"
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 
 export GIT_INDEX_FILE="$(mktemp)"
 export GIT_AUTHOR_NAME="maisui" GIT_AUTHOR_EMAIL="aibofan95@gmail.com"

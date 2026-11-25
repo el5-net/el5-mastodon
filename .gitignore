@@ -1,0 +1,4 @@
+# 可重建产物：rm -rf src && bash build.sh 即可从上游 + 补丁重新生成
+src/
+# 任务记录，不是仓库内容（只留在 PoC 工作区）
+PLAN.md

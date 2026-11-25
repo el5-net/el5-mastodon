@@ -55,16 +55,22 @@ git -C src status                          # 看冲突文件
 # 直接在 src/ 里手工改好冲突文件（保留自己的定制语义）
 git -C src add <冲突文件>
 git -C src am --continue                   # 让本次装配走完
-# 把修正回写为补丁，替换 patches/ 中对应的 000N-*.patch：
+# 把修正回写为补丁，替换 patches/ 中对应的那一个（format-patch 固定输出 0001-*，须改名）：
 git -C src log --oneline --grep="<该补丁的提交标题>" -1   # 找到它的提交 sha
 git -C src format-patch -1 <sha> -o /tmp/reexport
-cp /tmp/reexport/000N-*.patch patches/                    # 文件名编号保持一致
+cp /tmp/reexport/0001-*.patch patches/0003-feat-tune-trending-statuses-thresholds.patch
 rm -rf src && bash build.sh && bash verify.sh            # 从零复验
 ```
+
+（上例以修复 0003 为例；目标文件名按实际补丁编号/标题替换。）
 
 若不想在本轮修，直接放弃本次装配：`git -C src am --abort && rm -rf src`，
 回头再改 `patches/` 里的对应补丁重跑。`build.sh` 失败时也会打印这几条指引。
 注意：**换 PATCH_BASE 等于换三方合并的祖先，所有补丁都要重新导出**，别只改一行蒙混过关。
+另外，这样回写的补丁其基线 blob 会变成修复时的版本（如 v4.7.6），而 `build.sh` 只 fetch
+`PATCH_BASE`（v4.7.2）与目标 tag，下次升级时 `--3way` 可能静默退化为普通 apply；
+修完冲突后建议尽快按 `tools/make-patches.sh` 的思路把整个补丁系列在当前基线上重导一遍，
+并同步更新 `build.sh` 的 `PATCH_BASE`。
 
 ## 4. 跳版本规则
 
@@ -115,6 +121,9 @@ README.md                本文件
    零 secret 依赖。
 4. 打 `v4.7.6` tag 并 push（`git tag v4.7.6 && git push origin v4.7.6`）即触发 `release.yml`：
    构建并推送 `maisuier/mastodon:<tag>` / `:latest`、`maisuier/mastodon-streaming` 同款标签，
-   以及 `ghcr.io/<owner>/mastodon(-streaming)` 同款标签。未配 secrets 时只构建不推送并打印提示。
-   手动演练：Actions → Run workflow，`push` input 默认 false（只构建不推）。
+   以及 `ghcr.io/<owner>/mastodon(-streaming)` 同款标签。tag push 总会推 ghcr
+   （`GITHUB_TOKEN` 恒存在）；Docker Hub 需配置 `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`，
+   未配则跳过该侧并打印提示。
+   手动演练：Actions → Run workflow，`push` input 默认 false（只构建不推）；可用 `version`
+   input 指定要装配的上游版本（留空用 `build.sh` 默认值），镜像 tag 随之绑定。
 5. ghcr 包首次出现后，到 package settings 设可见性并链接仓库（Link repository），否则外部看不到。

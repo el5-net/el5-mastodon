@@ -102,3 +102,19 @@ README.md                本文件
 ```
 
 `src/` 随时可删可重建：`rm -rf src && bash build.sh`。它不入库，也不会污染这个仓库的历史。
+
+## 8. 首次接入 GitHub 与 CI
+
+1. 在 GitHub 建一个**空**仓库（不要勾选初始化 README），本地加远端并 push 当前分支：
+   `git remote add origin <仓库 URL>` → `git push -u origin feat/patch-repo-bootstrap`。
+   （远端由用户本人创建；仓库当前没有 remote，也没有推送过。）
+2. Settings → Secrets and variables → Actions → New repository secret，配置
+   `DOCKERHUB_USERNAME`、`DOCKERHUB_TOKEN`（Docker Hub Access Token）。
+   `GITHUB_TOKEN` 由 Actions 自动提供，workflow 顶层已声明 `packages: write`，无需手动配置。
+3. 每次 push / PR 自动跑 `assemble.yml` 门禁：语法检查 + CRLF 防护断言 + 装配 + 热点抽查，
+   零 secret 依赖。
+4. 打 `v4.7.6` tag 并 push（`git tag v4.7.6 && git push origin v4.7.6`）即触发 `release.yml`：
+   构建并推送 `maisuier/mastodon:<tag>` / `:latest`、`maisuier/mastodon-streaming` 同款标签，
+   以及 `ghcr.io/<owner>/mastodon(-streaming)` 同款标签。未配 secrets 时只构建不推送并打印提示。
+   手动演练：Actions → Run workflow，`push` input 默认 false（只构建不推）。
+5. ghcr 包首次出现后，到 package settings 设可见性并链接仓库（Link repository），否则外部看不到。

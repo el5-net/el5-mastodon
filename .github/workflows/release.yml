@@ -131,7 +131,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: src
-          file: Dockerfile
           cache-from: type=gha,scope=mastodon
           cache-to: type=gha,mode=max,scope=mastodon
           push: ${{ steps.meta.outputs.has_dockerhub == 'true' && steps.meta.outputs.should_push == 'true' }}
@@ -143,7 +142,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: src/streaming
-          file: Dockerfile
           cache-from: type=gha,scope=streaming
           cache-to: type=gha,mode=max,scope=streaming
           push: ${{ steps.meta.outputs.has_dockerhub == 'true' && steps.meta.outputs.should_push == 'true' }}
@@ -155,7 +153,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: src
-          file: Dockerfile
           cache-from: type=gha,scope=mastodon
           cache-to: type=gha,mode=max,scope=mastodon
           push: ${{ steps.meta.outputs.has_ghcr == 'true' && steps.meta.outputs.should_push == 'true' }}
@@ -167,7 +164,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: src/streaming
-          file: Dockerfile
           cache-from: type=gha,scope=streaming
           cache-to: type=gha,mode=max,scope=streaming
           push: ${{ steps.meta.outputs.has_ghcr == 'true' && steps.meta.outputs.should_push == 'true' }}

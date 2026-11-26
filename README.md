@@ -127,3 +127,39 @@ README.md                本文件
    手动演练：Actions → Run workflow，`push` input 默认 false（只构建不推）；可用 `version`
    input 指定要装配的上游版本（留空用 `build.sh` 默认值），镜像 tag 随之绑定。
 5. ghcr 包首次出现后，到 package settings 设可见性并链接仓库（Link repository），否则外部看不到。
+
+## 9. 如何新增修改
+
+按"改动有多轻"从轻到重选入口：
+
+1. **构建参数 / 环境变量（零补丁）**：上游 Dockerfile 预留了官方 ARG（例如版本后缀
+   `MASTODON_VERSION_METADATA`），在 `release.yml` 的 build-push 步骤加 `build-args` 即可，
+   完全不用碰补丁。
+2. **新增文件（`overlay/`，新功能首选）**：把新文件放进 `overlay/`，`build.sh` 装配后会
+   自动拷入 `src/`，天然不与上游冲突。
+3. **修改上游已有文件（补丁）**：用 `tools/new-patch.sh`，"改文件 + 一条命令"搞定。
+
+### new-patch.sh 用法与背后流程
+
+```bash
+# 1) 在 src/ 里改好文件（src/ 是一次性工作台，随时可 rm -rf 重建）
+# 2) 一条命令：提交改动、导出补丁、从零重装验证
+bash tools/new-patch.sh "feat: <描述>"
+```
+
+背后依次做：`src/` 不存在先装配（首次需几分钟）→ 把未提交改动以
+`-c user.name=el5 -c user.email=build@el5.net` 提交 → `git format-patch -1 --stdout` 导出 →
+序号取 `patches/` 现有最大 NNNN + 1、文件名由消息小写化/非字母数字折叠成单个 `-`/
+截断 50 字符后生成 `NNNN-<slug>.patch` → 删掉 `src/` 从零重装验证 N+1 个补丁。
+工作区干净且没有新提交时会直接报错，避免导出空补丁；脚本不 push、不打 tag。
+注意 `verify.sh` 的 FORK 字节比对只覆盖最初 7 个文件，新改动请自行核对关键行；
+确认无误后 `git add patches/` 提交（push 由 lead 负责）。
+
+### Windows / Git Bash 环境
+
+全套流程在 Windows + Git Bash 下原生可用（`docs/DRILLS.md` 记录的环境即
+Windows + Git Bash + git 2.51），`.gitattributes` 的 `*.patch -text` 已挡住 CRLF 毁补丁；
+本地永远不需要 Docker，镜像构建在 CI。
+
+新增补丁基于当前 `MASTODON_REF` 基线；将来升级时 `--3way` 对它退化为普通 apply 的说明与
+处理办法见第 3 节「补丁撞上了怎么办」。
